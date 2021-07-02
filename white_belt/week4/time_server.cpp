@@ -26,11 +26,11 @@ public:
         {
             last_fetched_time=AskTimeServer();
         }
-        catch (const system_error& ex) { }
+        catch (const std::system_error& ex) { }
         return last_fetched_time;
     }
 private:
-    std::tring last_fetched_time = "00:00:00";
+    std::string last_fetched_time = "00:00:00";
 };
 
 int main()
@@ -47,3 +47,4 @@ int main()
     }
     return 0;
 }
+
