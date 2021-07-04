@@ -36,51 +36,28 @@ public:
     // подробности см. ниже
     std::tuple<TasksInfo, TasksInfo> PerformPersonTasks(const std::string& person, int task_count)
     {
-        if (!dev_tasks.count(person))
+        TasksInfo updated_tasks, untouched_tasks;
+        if (dev_tasks.count(person))
         {
-            TasksInfo updated_tasks,untouched_tasks;
-            return std::make_tuple(updated_tasks,untouched_tasks);
-        }
-        TasksInfo tasks = dev_tasks[person];
-        TasksInfo reserve = tasks;
-        TasksInfo in=tasks, out=tasks;
-        for (auto status: TaskStatus)
-        {
-            in[status]=0;
-            out[status]=0;
-        }
-        for (auto status = TaskStatus::NEW; status != TaskStatus::DONE; status++)
-        {
-            if (tasks[status] >= task_count)
+            TasksInfo tasks = dev_tasks[person], reserve = tasks, empty;
+            int legacy = 0;
+            for (auto status: {TaskStatus::NEW, TaskStatus::IN_PROGRESS, TaskStatus::TESTING, TaskStatus::DONE})
             {
-                out[status] += task_count;
-                in[status+1] += task_count;
-                task_count = 0;
+                if (legacy)
+                {
+                    updated_tasks[status] = legacy;
+                }
+                reserve[status] = (tasks[status] < task_count) ? (legacy) : (reserve[status] + legacy - task_count);
+                if (reserve[status]-legacy)
+                {
+                    untouched_tasks[status] = reserve[status] - legacy;
+                }
+                legacy = std::min(tasks[status], task_count);
+                task_count = std::max(task_count - tasks[status], 0);
             }
-            else
-            {
-                task_count -= tasks[status];
-                in[status+1] += tasks[status];
-                out[status] += tasks[status];
-            }
+            dev_tasks[person] = reserve;
         }
-
-        for (auto status = TaskStatus::NEW; status != TaskStatus::DONE; status++)
-        {
-            if (tasks[status] >= task_count)
-            {
-                reserve[status] -= task_count;
-                reserve[status+1] += task_count;
-                task_count = 0;
-            }
-            else
-            {
-                task_count -= tasks[status];
-                reserve[status+1] += tasks[status];
-                tasks[status] = 0;
-            }
-        }
-
+        return std::make_tuple(updated_tasks,untouched_tasks);
     }
 };
 
